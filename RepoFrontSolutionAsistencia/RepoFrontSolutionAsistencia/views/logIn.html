@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" 
+    rel="stylesheet" 
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" 
+    crossorigin="anonymous">
+    <link rel="icon" href="img/icon.png">
+    <link rel="shortcut icon" href="../assets/img/favi.png" type="image/x-icon">
+    
+</head>
+<body class="bg-primary d-flex justify-content-center align-items-center vh-100">
+    <nav class="navbar navbar-expand-lg colorPrincipal navbar-dark fixed-top">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="./home.html">ClassRoomApp</a>
+        </div>
+    </nav>
+    <div class=" login-container bg-light p-5 rounded-5 text-dark shadow-lg" style="width: 25rem;">
+        <div class="d-flex justify-content-center">
+        <img src="../assets/img/LogIn.png" alt="Icono de inicio de sesion"
+        height="130rem">
+        </div>
+        <div class="text-center fs-3 fw-medium">Log In</div>
+        <div class="input-group mt-3">
+       <img class="input-group-text" src="../assets/img/person.png" alt="Icono de persona" height="45rem">
+        <input class="form-control" type="text" id="username" placeholder="Username" required>
+        </div>
+        <div class="input-group mt-3">
+            <img class="input-group-text" src="../assets/img/candado.png" alt="Icono de candado" height="46rem">
+        <input class="form-control" type="password" id="password" placeholder="Password" required>        
+        </div>
+        
+       <div class="mt-4">
+       <button id="loginBtn" class="btn btn-primary w-100 text-white fw-medium shadow-sm rounded-pill">Log In</button>
+       </div>
+       
+        <div class="justify-content-around mt-2" style="font-size: 1rem;">
+            <div class="login-forgot">
+                <a href="#" class="text-decoration-none fst-italic">Olvidaste la contraseña?</a>
+            </div>
+            <div class="login-no mt-1">
+                <a href="#" class="text-decoration-none fst-italic">crear cuenta</a>
+            </div>
+            <section>
+                <a href="./tablaRegistro.html" class="btn btn-primary w-100 text-white fw-medium shadow-sm rounded-pill">Tabla</a>
+            </section>
+        </div>
+    </div>
+
+
+<script src="../controllers/logInScript.js"></script>
+</body>
+</html>
+
