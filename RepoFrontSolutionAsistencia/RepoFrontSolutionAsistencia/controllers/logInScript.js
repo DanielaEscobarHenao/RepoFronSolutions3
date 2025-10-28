@@ -11,7 +11,7 @@ function initializeUsers() {
     const defaultUsers = [
       { username: 'admin', password: 'admin123', role: 'Administrador' },
       { username: 'docente1', password: 'docente123', role: 'Docente' },
-      { username: 'profesor', password: 'profesor123', role: 'Docente' }
+      { username: 'Estudiante', password: 'Estudiante123', role: 'Estudiante' }
     ];
     localStorage.setItem('users', JSON.stringify(defaultUsers));
     console.log('Usuarios inicializados en localStorage');
@@ -53,7 +53,7 @@ loginBtn.addEventListener("click", (e) => {
     localStorage.setItem('currentSession', JSON.stringify(session));
     
     // Confirmación visual
-    loginBtn.innerText = "✓ Ingresando...";
+    loginBtn.innerText = "Ingresando...";
     loginBtn.classList.remove("btn-primary");
     loginBtn.classList.add("btn-success");
     loginBtn.disabled = true;
@@ -65,7 +65,7 @@ loginBtn.addEventListener("click", (e) => {
     
   } else {
     // Credenciales incorrectas
-    alert("Usuario o contraseña incorrectos. \n\nUsuarios de prueba:\n- admin / admin123\n- docente1 / docente123\n- profesor / profesor123");
+    alert("Usuario o contraseña incorrectos. \n\nUsuarios de prueba:\n- admin / admin123\n- docente1 / docente123\n- Estudiante / Estudiante123");
     
     // Limpiar campos
     password.value = "";
