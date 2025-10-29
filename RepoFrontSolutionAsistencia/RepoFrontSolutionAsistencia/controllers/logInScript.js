@@ -9,9 +9,9 @@ function initializeUsers() {
   if (!users) {
     // Crear usuarios por defecto
     const defaultUsers = [
-      { username: 'admin', password: 'admin123', role: 'Administrador' },
-      { username: 'docente1', password: 'docente123', role: 'Docente' },
-      { username: 'Estudiante', password: 'Estudiante123', role: 'Estudiante' }
+      { id: 1, username: 'admin', password: 'admin123', email: 'admin@ejemplo.com', role: 'Profesor' },
+      { id: 2, username: 'Ana García', password: 'ana123', email: 'ana@ejemplo.com', role: 'Estudiante' },
+      { id: 3, username: 'Carlos López', password: 'carlos123', email: 'carlos@ejemplo.com', role: 'Estudiante' }
     ];
     localStorage.setItem('users', JSON.stringify(defaultUsers));
     console.log('Usuarios inicializados en localStorage');
@@ -46,6 +46,7 @@ loginBtn.addEventListener("click", (e) => {
   if (validUser) {
     // Guardar sesión actual
     const session = {
+      id: validUser.id,
       username: validUser.username,
       role: validUser.role,
       loginTime: new Date().toISOString()
@@ -65,7 +66,7 @@ loginBtn.addEventListener("click", (e) => {
     
   } else {
     // Credenciales incorrectas
-    alert("Usuario o contraseña incorrectos. \n\nUsuarios de prueba:\n- admin / admin123\n- docente1 / docente123\n- Estudiante / Estudiante123");
+    alert("Usuario o contraseña incorrectos. \n\nUsuarios de prueba:\n- admin / admin123 (Profesor)\n- Ana García / ana123 (Estudiante)");
     
     // Limpiar campos
     password.value = "";

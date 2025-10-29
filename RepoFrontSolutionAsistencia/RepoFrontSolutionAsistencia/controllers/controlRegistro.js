@@ -1,5 +1,7 @@
 
 //Local storage
+let currentSessionData = null;
+
 function checkSession() {
   const session = localStorage.getItem('currentSession');
   if (!session) {
@@ -8,31 +10,24 @@ function checkSession() {
     return false;
   }
   
-  const sessionData = JSON.parse(session);
-  console.log('Usuario actual:', sessionData.username);
+  currentSessionData = JSON.parse(session);
+  console.log('Usuario actual:', currentSessionData.username, 'Rol:', currentSessionData.role);
   return true;
 }
 
-// Verificar sesión
+// Verificar sesión al inicio
 if (!checkSession()) {
   throw new Error('Sesión no es válida');
 }
 
-// Datos de los estudiantes
-const students = [
-  // Grupo A 
-  { id: 1, name: "Ana García", email: "ana@ejemplo.com", group: "Grupo A", attendance: "No registrado" },
-  { id: 2, name: "Carlos López", email: "carlos@ejemplo.com", group: "Grupo A", attendance: "No registrado" },
- 
-  // Grupo B 
-  { id: 4, name: "Isabel Soto", email: "isabel@ejemplo.com", group: "Grupo B", attendance: "No registrado" },
-  { id: 5, name: "Javier Ramírez", email: "javier@ejemplo.com", group: "Grupo B", attendance: "No registrado" },
-  
-  // Grupo C 
-  { id: 7, name: "Sara Muñoz", email: "sara@ejemplo.com", group: "Grupo C", attendance: "No registrado" },
-  { id: 8, name: "Tomás Blanco", email: "tomas@ejemplo.com", group: "Grupo C", attendance: "No registrado" },
-  
-];
+// Cargar TODOS los usuarios desde localStorage como la única fuente de verdad.
+let allUsers = JSON.parse(localStorage.getItem("users") || "[]");
+
+// Filtrar para obtener solo los estudiantes. Esta será nuestra lista de trabajo.
+// Mapeamos para que coincida con la estructura anterior (name, group, etc.)
+let students = allUsers
+  .filter(user => user.role === 'Estudiante')
+  .map(user => ({ ...user, name: user.username, group: user.group || 'Sin Grupo' }));
 
 // Manejo del local Store para asistencia
 let hasUnsavedChanges = false; // Cambios sin guardar
@@ -396,11 +391,16 @@ function renderTable(filter = {}) {
   const selectedAlpha = (filter.alpha || '').toUpperCase();
 
   let filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchText) || 
+    const matchesSearch = student.username.toLowerCase().includes(searchText) || 
                          student.email.toLowerCase().includes(searchText);
     const matchesGroup = student.group === selectedGrupo;
     const matchesAlpha = selectedAlpha === '' || 
                         student.name.toUpperCase().startsWith(selectedAlpha);
+
+    if (currentSessionData.role === 'Estudiante' && student.name !== currentSessionData.username) {
+      return false;
+    }
+
     return matchesSearch && matchesGroup && matchesAlpha;
   });
 
@@ -433,7 +433,7 @@ function renderTable(filter = {}) {
     divStudentInfo.className = "student-info";
     const spanName = document.createElement('span');
     spanName.className = 'student-name';
-    spanName.textContent = student.name;
+    spanName.textContent = student.username;
     const spanEmail = document.createElement('span');
     spanEmail.className = 'student-email';
     spanEmail.textContent = student.email;
@@ -547,6 +547,82 @@ function getCurrentFilters() {
   };
 }
 
+// Función para renderizar el dashboard del estudiante
+function renderStudentDashboard() {
+  // 1. Ocultar todos los controles de profesor
+  document.querySelector('.addEst')?.remove();
+  document.querySelector('.filter-box')?.remove();
+  document.querySelector('.alpha-filter')?.remove();
+  document.getElementById('searchInput').style.display = 'none';
+
+  // Cambiar el título principal de la sección
+  const mainTitle = document.querySelector('main.content h2');
+  if(mainTitle) {
+    mainTitle.textContent = 'Mi Historial de Asistencia';
+  }
+
+  // 2. Encontrar el ID del estudiante actual
+  const studentId = currentSessionData.id;
+  const studentHistory = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('attendance ')) {
+      const attendanceData = JSON.parse(localStorage.getItem(key));
+      if (attendanceData[studentId] && attendanceData[studentId] !== 'No registrado') {
+        // Parsear la clave para obtener materia, grupo y fecha
+        const parts = key.replace('attendance ', '').split(',');
+        studentHistory.push({
+          materia: parts[0],
+          grupo: parts[1],
+          fecha: parts[2],
+          status: attendanceData[studentId]
+        });
+      }
+    }
+  }
+
+  // 4. Modificar la cabecera de la tabla
+  const thead = document.querySelector('.attendance-table thead tr');
+  thead.innerHTML = `
+    <th scope="col">Fecha</th>
+    <th scope="col">Materia</th>
+    <th scope="col">Grupo</th>
+    <th scope="col">Estado</th>
+  `;
+
+  // 5. Renderizar el historial en la tabla
+  tbody.innerHTML = '';
+  if (studentHistory.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 1rem;">Aún no tienes registros de asistencia.</td></tr>`;
+    return;
+  }
+
+  studentHistory.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Ordenar por fecha más reciente
+
+  studentHistory.forEach(record => {
+    const statusClass = record.status === 'Ausente' ? 'table-danger' : (record.status === 'Justificado' ? 'table-warning' : '');
+    tbody.innerHTML += `
+      <tr class="${statusClass}">
+        <td>${record.fecha}</td>
+        <td>${record.materia}</td>
+        <td>${record.grupo}</td>
+        <td>${record.status}</td>
+      </tr>
+    `;
+  });
+}
+
+// Aplicar permisos según el rol del usuario
+function applyRolePermissions() {
+  if (!currentSessionData) return;
+
+  const role = currentSessionData.role;
+
+  if (role === 'Estudiante') {
+    renderStudentDashboard();
+    return; // Detenemos la ejecución para no renderizar la tabla de profesor
+  }
+}
 // CSeleccionar todos
 function updateSelectAllCheckboxState() {
   const studentCheckboxes = document.querySelectorAll('.student-checkbox');
@@ -661,10 +737,50 @@ if (logoutLink) {
   });
 }
 // Inicializar
-createActionButtons();
-renderTable(getCurrentFilters());
-updateActionButtons();
 
+// Lógica para añadir estudiante existente por ID
+const addStudentByIdBtn = document.getElementById('addStudentByIdBtn');
+if (addStudentByIdBtn) {
+  addStudentByIdBtn.addEventListener('click', () => {
+    const studentIdInput = document.getElementById('addStudentByIdInput');
+    const studentId = parseInt(studentIdInput.value, 10);
+
+    if (isNaN(studentId)) {
+      alert('Por favor, introduce un ID de estudiante válido.');
+      return;
+    }
+
+    // Verificar si el estudiante ya está en la tabla actual
+    const currentFilters = getCurrentFilters();
+    const studentsInCurrentGroup = students.filter(s => s.group === currentFilters.grupo);
+    if (studentsInCurrentGroup.some(s => s.id === studentId)) {
+      alert('Este estudiante ya pertenece al grupo actual.');
+      studentIdInput.value = '';
+      return;
+    }
+
+    // Buscar al estudiante en la lista maestra
+    const studentToAdd = students.find(s => s.id === studentId);
+
+    if (studentToAdd) {
+      // Añadir el estudiante al grupo actual de forma temporal para esta sesión
+      studentToAdd.group = currentFilters.grupo;
+      renderTable(currentFilters);
+      alert(`Estudiante "${studentToAdd.name}" añadido a la lista de asistencia actual.`);
+      studentIdInput.value = '';
+    } else {
+      alert('No se encontró ningún estudiante con ese ID.');
+    }
+  });
+}
+
+// Aplicar permisos ANTES de cualquier otra renderización
+applyRolePermissions();
+if (currentSessionData.role !== 'Estudiante') {
+  createActionButtons();
+  renderTable(getCurrentFilters());
+  updateActionButtons();
+}
 
 // Este es el CRUD para registrar un estudiante
 
@@ -702,8 +818,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const nombre = document.getElementById("nombre").value.trim();
   const grupo = document.getElementById("materiaN").value;
+  const materia = document.getElementById("materia").value; // Capturamos la materia
 
-  if (!nombre || !grupo) {
+  if (!nombre || !grupo || !materia) { // Validamos la materia
     Swal.fire({
       icon: "warning",
       title: "Campos incompletos",
@@ -712,7 +829,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const nuevoEstudiante = { nombre, grupo };
+  const nuevoEstudiante = { nombre, grupo, materia };
 
   if (editIndex !== null) {
     // Editar estudiante existente
@@ -725,29 +842,29 @@ document.addEventListener("DOMContentLoaded", () => {
     editIndex = null;
   } else {
     // Agregar estudiante nuevo
-    estudiantes.push(nuevoEstudiante);
+    // Crear un nuevo usuario completo y agregarlo a la lista principal de 'allUsers'
+    const nuevoId = Date.now();
+    const correo = document.getElementById("correo").value.trim() || `${nombre.toLowerCase().replace(/\s+/g, '.')}@ejemplo.com`;
+    const nuevoUsuarioCompleto = {
+      id: nuevoId,
+      username: nombre,
+      email: correo,
+      password: 'password123', // Asignar una contraseña por defecto
+      role: 'Estudiante',
+      group: grupo,
+      materia: materia // Guardamos la materia
+    };
 
+    allUsers.push(nuevoUsuarioCompleto);
+    localStorage.setItem("users", JSON.stringify(allUsers));
 
-// Crear ID único para control de asistencia
-const nuevoId = students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1;
-const estudianteCompleto = {
-  id: nuevoId,
-  name: nuevoEstudiante.nombre,
-  email: `${nuevoEstudiante.nombre.toLowerCase().replace(/\s+/g, '.')}@ejemplo.com`,
-  group: nuevoEstudiante.grupo,
-  attendance: "No registrado"
-};
+    // Actualizar la lista de estudiantes en memoria para reflejar el cambio inmediatamente
+    students = allUsers
+      .filter(user => user.role === 'Estudiante')
+      .map(user => ({ ...user, name: user.username, group: user.group || 'Sin Grupo' }));
 
-// Agregar al arreglo principal de asistencia
-students.push(estudianteCompleto);
-
-// Inicializar su estado de asistencia
-attendanceStates[nuevoId] = 'No registrado';
-
-// Guardar actualizaciones
-localStorage.setItem("studentsData", JSON.stringify(students));
-renderTable(getCurrentFilters());
-updateActionButtons();
+    // Inicializar su estado de asistencia
+    attendanceStates[nuevoId] = 'No registrado';
 
    
     Swal.fire({
@@ -757,15 +874,11 @@ updateActionButtons();
     });
   }
 
-  // Guardar en localStorage
-  localStorage.setItem("estudiantes", JSON.stringify(estudiantes));
-
   // Limpiar formulario
   form.reset();
 
   // Actualizar la tabla de asistencia
-  renderTable(getCurrentFilters());
-  updateActionButtons();
+  location.reload(); // Recargar la página para asegurar que todos los datos se sincronicen
   });
 
   // Eventos para editar/eliminar registros
@@ -800,9 +913,3 @@ updateActionButtons();
 
   mostrarEstudiantes();
 });
-
-
-
-
-
-
